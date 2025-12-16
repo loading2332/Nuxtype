@@ -1,13 +1,27 @@
 {
-  "name": "Nuxtype",
+  "name": "nuxtype",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Real-time collaborative note-taking app with Nuxt 3, PostgreSQL and Y.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm --filter web dev",
+    "dev:collab": "pnpm --filter collaboration dev",
+    "build": "pnpm -r build",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
-  "keywords": [],
+  "keywords": [
+    "nuxt",
+    "collaboration",
+    "crdt",
+    "yjs"
+  ],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.26.0"
+  "packageManager": "pnpm@10.26.0",
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "drizzle-kit": "^0.31.8"
+  }
 }
