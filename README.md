@@ -1,6 +1,6 @@
 # Nuxtype
 
-> 基于 Nuxt 3、PostgreSQL 和 Y.js 的实时协同笔记应用
+> 基于 Nuxt 4、PostgreSQL 和 Y.js 的实时协同笔记应用
 
 一个全栈 TypeScript 项目，实现了 CRDT 实时协同编辑、AI 辅助写作和混合部署架构。
 
