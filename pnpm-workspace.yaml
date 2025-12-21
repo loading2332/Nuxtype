@@ -7,3 +7,7 @@ shellEmulator: true
 trustDowngrade: true
 
 trustPolicy: no-downgrade
+overrides:
+  chokidar: 4.0.1
+  koa: 2.16.2
+  semver: 7.6.3

@@ -27,18 +27,19 @@ export interface DocumentContent {
   type: "doc"
   content?: Array<{
     type: string
-    content?: any[]
-    attrs?: Record<string, any>
+    content?: unknown[]
+    attrs?: Record<string, unknown>
   }>
 }
 
 /**
  * API 响应通用格式
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean
   data?: T
   error?: string
+  message?: string
 }
 
 /**

@@ -12,4 +12,12 @@ export default defineNuxtConfig({
     prefix: "",
     componentDir: "./components/ui",
   },
+
+  runtimeConfig: {
+    jwtSecret: process.env.JWT_SECRET,
+    databaseUrl: process.env.DATABASE_URL,
+    public: {
+      wsUrl: process.env.NUXT_PUBLIC_WS_URL || "ws://localhost:1234",
+    },
+  },
 })
