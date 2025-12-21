@@ -1,27 +1,34 @@
 {
   "name": "nuxtype",
   "version": "1.0.0",
-  "description": "Real-time collaborative note-taking app with Nuxt 3, PostgreSQL and Y.js",
   "private": true,
-  "scripts": {
-    "dev": "pnpm --filter web dev",
-    "dev:collab": "pnpm --filter collaboration dev",
-    "build": "pnpm -r build",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
-  },
+  "packageManager": "pnpm@10.26.0",
+  "description": "Real-time collaborative note-taking app with Nuxt 3, PostgreSQL and Y.js",
+  "author": "",
+  "license": "ISC",
   "keywords": [
     "nuxt",
     "collaboration",
     "crdt",
     "yjs"
   ],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.26.0",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:collab": "pnpm --filter collaboration dev",
+    "build": "pnpm -r build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
   "devDependencies": {
+    "@antfu/eslint-config": "^6.7.1",
+    "@nuxt/eslint": "^1.12.1",
     "@types/node": "^25.0.2",
-    "drizzle-kit": "^0.31.8"
+    "drizzle-kit": "^0.31.8",
+    "eslint": "^9.39.2",
+    "eslint-plugin-format": "^1.1.0",
+    "typescript-eslint": "^8.50.0"
   }
 }

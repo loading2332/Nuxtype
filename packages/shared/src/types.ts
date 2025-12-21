@@ -24,7 +24,7 @@ export interface Document {
  * Tiptap JSON 文档结构
  */
 export interface DocumentContent {
-  type: 'doc'
+  type: "doc"
   content?: Array<{
     type: string
     content?: any[]

@@ -23,6 +23,7 @@
 ## 📋 技术栈
 
 ### 前端
+
 - **框架**: Nuxt 4 (Vue 3)
 - **样式**: Tailwind CSS 3
 - **组件**: Shadcn Vue
@@ -30,12 +31,14 @@
 - **实时协同**: Y.js, Hocuspocus
 
 ### 后端
+
 - **服务端**: Nuxt Nitro (Serverless)
 - **数据库**: PostgreSQL (Neon)
 - **ORM**: Drizzle ORM
 - **认证**: JWT + bcryptjs
 
 ### 开发工具
+
 - **包管理**: pnpm
 - **语言**: TypeScript
 - **代码规范**: ESLint
@@ -156,6 +159,7 @@ pnpm dlx shadcn-vue@latest add card
 ## 🗄️ 数据库设计
 
 ### users 表
+
 ```typescript
 {
   id: UUID (Primary Key)
@@ -167,6 +171,7 @@ pnpm dlx shadcn-vue@latest add card
 ```
 
 ### documents 表
+
 ```typescript
 {
   id: UUID (Primary Key)
@@ -182,6 +187,7 @@ pnpm dlx shadcn-vue@latest add card
 ## 🎯 开发路线图
 
 ### Week 1: 全栈基建 ✅ (当前进度)
+
 - [x] Monorepo 结构搭建
 - [x] 数据库连接与 Schema 定义
 - [x] UI 框架集成 (Tailwind + Shadcn)
@@ -189,18 +195,21 @@ pnpm dlx shadcn-vue@latest add card
 - [ ] 文档 CRUD 接口
 
 ### Week 2: 编辑器核心
+
 - [ ] Tiptap 富文本编辑器
 - [ ] Slash 命令菜单
 - [ ] Markdown 支持
 - [ ] 自动保存功能
 
 ### Week 3: 实时协同
+
 - [ ] WebSocket 服务搭建
 - [ ] Y.js 集成
 - [ ] 多人光标同步
 - [ ] 冲突解决机制
 
 ### Week 4: 高级特性
+
 - [ ] AI 辅助写作
 - [ ] 图片上传 (S3/R2)
 - [ ] 混合部署架构

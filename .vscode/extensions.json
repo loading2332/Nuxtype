@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "vue.volar",
+    "bradlc.vscode-tailwindcss",
+    "editorconfig.editorconfig",
+    "antfu.iconify",
+    "github.copilot",
+    "github.copilot-chat"
+  ]
+}

@@ -1,19 +1,19 @@
 {
   "name": "@nuxtype/shared",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.26.0",
   "description": "Shared code for Nuxtype monorepo",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
   "exports": {
     ".": "./src/index.ts"
   },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.26.0",
   "dependencies": {
     "drizzle-orm": "^0.45.1",
     "postgres": "^3.4.7"
