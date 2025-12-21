@@ -1,7 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+
 shellEmulator: true
 
-trustPolicy: no-downgrade
+trustDowngrade: true
 
-packages:
-  - 'apps/*'
-  - 'packages/*'
+trustPolicy: no-downgrade

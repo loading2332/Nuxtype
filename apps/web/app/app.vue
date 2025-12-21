@@ -5,7 +5,7 @@
         Nuxtype
       </h1>
       <p class="text-muted-foreground">
-        实时协同笔记应用 - 基于 Nuxt 3, PostgreSQL 和 Y.js
+        实时协同笔记应用 - 基于 Nuxt 4, PostgreSQL 和 Y.js
       </p>
     </div>
   </div>
