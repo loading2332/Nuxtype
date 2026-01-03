@@ -2,8 +2,6 @@
 import type { ApiResponse, CreateDocumentRequest, Document } from "@nuxtype/shared"
 import { Loader2, Plus, Trash } from "lucide-vue-next"
 import { useToast } from "@/components/ui/toast/use-toast"
-import Card from "~/components/ui/card/Card.vue"
-
 // 页面元数据
 useHead({
   title: "Documents - Nuxtype",
@@ -47,8 +45,9 @@ async function handleCreate() {
       await navigateTo(`/documents/${newDoc.id}`)
     }
   }
-  catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to create document"
+  catch (err: any) {
+    // 尝试提取详细错误信息
+    const message = err.data?.message || err.message || "Failed to create document"
     toast({
       title: "Error",
       description: message,
@@ -61,15 +60,24 @@ async function handleCreate() {
 }
 
 /**
- * 删除文档
- * 1. 调用 DELETE /api/documents/:id
- * 2. 成功后刷新列表
+ * 删除逻辑（优化后：全局弹窗）
  */
-async function handleDelete(id: string) {
+const isDeleteDialogOpen = ref(false)
+const deleteId = ref<string | null>(null)
+
+function openDeleteDialog(id: string) {
+  deleteId.value = id
+  isDeleteDialogOpen.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteId.value)
+    return
+
   try {
     isLoading.value = true
 
-    await $fetch(`/api/documents/${id}`, {
+    await $fetch(`/api/documents/${deleteId.value}`, {
       method: "DELETE",
     })
 
@@ -77,16 +85,22 @@ async function handleDelete(id: string) {
       title: "Success",
       description: "Document deleted successfully",
     })
+
+    // 关闭弹窗并重置 ID
+    isDeleteDialogOpen.value = false
+    deleteId.value = null
+
     await refresh()
   }
-  catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to delete document"
+  catch (err: any) {
+    const message = err.data?.message || err.message || "Failed to delete document"
     toast({
       title: "Error",
       description: message,
       variant: "destructive",
     })
   }
+
   finally {
     isLoading.value = false
   }
@@ -128,36 +142,14 @@ async function handleDelete(id: string) {
           </CardDescription>
         </CardHeader>
         <CardFooter>
-          <AlertDialog>
-            <!-- 触发器：点击这个显示弹窗 -->
-            <!-- as-child 的意思是：不要渲染一个额外的 <button>，直接把点击事件绑定在里面的子元素（我们的 Button）上 -->
-            <AlertDialogTrigger as-child>
-              <!-- 阻止点击事件冒泡，防止触发外层 Card 的跳转 -->
-              <Button variant="ghost" size="icon" @click.stop>
-                <Trash class="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              </Button>
-            </AlertDialogTrigger>
-
-            <!-- 弹窗内容 -->
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your document.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <!-- 确认按钮：点击后真正触发删除 -->
-                <AlertDialogAction
-                  class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  @click="handleDelete(doc.id)"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <!-- 触发器：只负责打开全局弹窗 -->
+          <Button
+            variant="ghost"
+            size="icon"
+            @click.stop="openDeleteDialog(doc.id)"
+          >
+            <Trash class="h-4 w-4 text-muted-foreground hover:text-destructive" />
+          </Button>
         </CardFooter>
       </Card>
       <Card v-if="documents.length === 0" class="flex flex-col items-center justify-center h-[200px] border-dashed bg-muted/50">
@@ -165,6 +157,29 @@ async function handleDelete(id: string) {
           No documents found. Create one to get started.
         </p>
       </Card>
+
+      <!-- 全局删除确认框 -->
+      <AlertDialog :open="isDeleteDialogOpen" @update:open="(v) => isDeleteDialogOpen = v">
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your document.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel @click="isDeleteDialogOpen = false">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              @click="confirmDelete"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   </div>
 </template>
