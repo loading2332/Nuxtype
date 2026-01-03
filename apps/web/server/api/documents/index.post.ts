@@ -1,25 +1,28 @@
+import type { CreateDocumentRequest } from "@nuxtype/shared"
+
 import { documents } from "@nuxtype/shared"
-import { desc, eq } from "drizzle-orm"
+
 import { db } from "../../utils/db"
+
 import { extractToken, verifyToken } from "../../utils/jwt"
 
 export default defineEventHandler(async (event) => {
+  const body = await readBody<CreateDocumentRequest>(event)
   const token = extractToken(event)
-  if (!token)
+  if (token == null || !token) {
     throw createError({ statusCode: 401 })
-
+  }
   const user = verifyToken(token)
-  if (!user)
+  if (!user) {
     throw createError({ statusCode: 401 })
-
-  const docs = await db
-    .select()
-    .from(documents)
-    .where(eq(documents.userId, user.userId))
-    .orderBy(desc(documents.createdAt))
-
+  }
+  const newDoc = await db.insert(documents).values({
+    userId: user.userId,
+    title: body.title,
+    content: body.content,
+  }).returning()
   return {
     success: true,
-    data: docs,
+    data: newDoc[0],
   }
 })

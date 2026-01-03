@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 
   shadcn: {
     prefix: "",
-    componentDir: "./components/ui",
+    componentDir: "./app/components/ui",
   },
 
   runtimeConfig: {
@@ -18,6 +18,16 @@ export default defineNuxtConfig({
     databaseUrl: process.env.DATABASE_URL,
     public: {
       wsUrl: process.env.NUXT_PUBLIC_WS_URL || "ws://localhost:1234",
+    },
+  },
+
+  hooks: {
+    "components:dirs": (dirs) => {
+      for (const dir of dirs) {
+        if (typeof dir === "object") {
+          dir.extensions = ["vue"]
+        }
+      }
     },
   },
 })

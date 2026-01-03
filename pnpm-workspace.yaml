@@ -1,12 +1,12 @@
-packages:
-  - apps/*
-  - packages/*
-
 shellEmulator: true
 
 trustDowngrade: true
 
 trustPolicy: no-downgrade
+packages:
+  - apps/*
+  - packages/*
+
 overrides:
   chokidar: 4.0.1
   koa: 2.16.2
