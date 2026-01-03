@@ -129,9 +129,6 @@ importers:
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(postgres@3.4.7)
-      postgres:
-        specifier: ^3.4.7
-        version: 3.4.7
 
 packages:
 

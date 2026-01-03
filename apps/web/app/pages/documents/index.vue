@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ApiResponse, CreateDocumentRequest, Document } from "@nuxtype/shared"
-import { Loader2, Plus } from "lucide-vue-next"
+import { Loader2, Plus, Trash } from "lucide-vue-next"
 import { useToast } from "@/components/ui/toast/use-toast"
 import Card from "~/components/ui/card/Card.vue"
 
@@ -59,6 +59,38 @@ async function handleCreate() {
     isLoading.value = false
   }
 }
+
+/**
+ * 删除文档
+ * 1. 调用 DELETE /api/documents/:id
+ * 2. 成功后刷新列表
+ */
+async function handleDelete(id: string) {
+  try {
+    isLoading.value = true
+
+    await $fetch(`/api/documents/${id}`, {
+      method: "DELETE",
+    })
+
+    toast({
+      title: "Success",
+      description: "Document deleted successfully",
+    })
+    await refresh()
+  }
+  catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to delete document"
+    toast({
+      title: "Error",
+      description: message,
+      variant: "destructive",
+    })
+  }
+  finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -95,6 +127,38 @@ async function handleCreate() {
             Created at {{ new Date(doc.createdAt).toLocaleDateString() }}
           </CardDescription>
         </CardHeader>
+        <CardFooter>
+          <AlertDialog>
+            <!-- 触发器：点击这个显示弹窗 -->
+            <!-- as-child 的意思是：不要渲染一个额外的 <button>，直接把点击事件绑定在里面的子元素（我们的 Button）上 -->
+            <AlertDialogTrigger as-child>
+              <!-- 阻止点击事件冒泡，防止触发外层 Card 的跳转 -->
+              <Button variant="ghost" size="icon" @click.stop>
+                <Trash class="h-4 w-4 text-muted-foreground hover:text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+
+            <!-- 弹窗内容 -->
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your document.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <!-- 确认按钮：点击后真正触发删除 -->
+                <AlertDialogAction
+                  class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  @click="handleDelete(doc.id)"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardFooter>
       </Card>
       <Card v-if="documents.length === 0" class="flex flex-col items-center justify-center h-[200px] border-dashed bg-muted/50">
         <p class="text-sm text-muted-foreground">
