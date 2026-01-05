@@ -30,7 +30,7 @@ async function handleLogin() {
 
       toast({
         title: "登录成功",
-        description: "正在跳转...",
+        description: "跳转至主页面",
       })
       await navigateTo("/documents")
     }
