@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { Toaster } from "@/components/ui/toast"
+import { useToast } from "@/components/ui/toast/use-toast"
 
-const { isAuthenticated, logout } = useAuth()
+const token = useCookie("token")
+const isAuthenticated = computed(() => !!token.value)
+const { toast } = useToast()
+
+async function handleLogout() {
+  token.value = null
+  toast({
+    title: "Logged out",
+    description: "You have been successfully logged out.",
+  })
+  await navigateTo("/auth/login")
+}
 </script>
 
 <template>
@@ -28,7 +40,7 @@ const { isAuthenticated, logout } = useAuth()
           </template>
 
           <template v-else>
-            <Button variant="ghost" size="sm" @click="logout">
+            <Button variant="ghost" size="sm" @click="handleLogout">
               Logout
             </Button>
           </template>

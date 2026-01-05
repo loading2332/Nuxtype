@@ -64,3 +64,9 @@ export interface CreateDocumentRequest {
   title?: string
   content?: DocumentContent
 }
+
+export interface UpdateDocumentRequest {
+  title?: string
+  content?: DocumentContent
+  isPublic?: boolean
+}

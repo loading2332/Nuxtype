@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button"
+
+const { isAuthenticated } = useAuth()
+
+if (isAuthenticated.value) {
+  await navigateTo("/documents")
+}
 </script>
 
 <template>

@@ -11,14 +11,13 @@
 
 ## ✨ 核心特性
 
-- 🎨 **现代化 UI** - 基于 Shadcn Vue 的美观组件库
-- 📝 **富文本编辑** - Tiptap 编辑器，支持 Markdown 和 Slash 命令
-- 🔄 **实时协同** - Y.js + WebSocket 实现多人同步编辑
-- 🤖 **AI 辅助** - 集成 AI 续写和内容优化
-- 🔐 **用户认证** - JWT Token 安全认证
-- 🗄️ **数据持久化** - PostgreSQL + Drizzle ORM
+- 🎨 **现代化 UI** - 基于 Shadcn Vue 的美观组件库，App Shell 侧边栏布局
+- 📝 **富文本编辑** - Tiptap 编辑器，支持 Markdown 和实时预览
+- 🔄 **自动保存** - 防抖机制实现无感知自动保存
+- 🔐 **用户认证** - JWT Token 安全认证 + Cookie 持久化
+- 🗄️ **数据持久化** - PostgreSQL + Drizzle ORM (JSONB 存储)
 - 📦 **Monorepo 架构** - pnpm workspace 统一管理
-- 🚀 **混合部署** - Serverless + Stateful 服务分离
+- ⚡ **性能优化** - 异步组件加载、骨架屏、非阻塞数据获取
 
 ## 📋 技术栈
 
@@ -26,22 +25,22 @@
 
 - **框架**: Nuxt 4 (Vue 3)
 - **样式**: Tailwind CSS 3
-- **组件**: Shadcn Vue
+- **组件**: Shadcn Vue (Reka UI)
 - **编辑器**: Tiptap (ProseMirror)
-- **实时协同**: Y.js, Hocuspocus
+- **状态管理**: Vue Composables
 
 ### 后端
 
-- **服务端**: Nuxt Nitro (Serverless)
-- **数据库**: PostgreSQL (Neon)
+- **服务端**: Nuxt Nitro (Server Routes)
+- **数据库**: PostgreSQL (Neon/Supabase)
 - **ORM**: Drizzle ORM
 - **认证**: JWT + bcryptjs
 
 ### 开发工具
 
 - **包管理**: pnpm
-- **语言**: TypeScript
-- **代码规范**: ESLint
+- **语言**: TypeScript (严格模式)
+- **代码规范**: ESLint + 自动导入
 - **版本控制**: Git
 
 ## 🏗️ 项目结构
@@ -49,18 +48,27 @@
 ```
 Nuxtype/
 ├── apps/
-│   ├── web/                    # Nuxt 应用 (部署到 Vercel)
-│   │   ├── app/               # 应用核心
-│   │   ├── components/        # Vue 组件
-│   │   ├── server/            # API 路由
-│   │   │   ├── api/          # HTTP API
-│   │   │   └── utils/        # 服务端工具
-│   │   └── assets/           # 静态资源
-│   └── collaboration/         # WebSocket 服务 (部署到 Render/Railway)
-│       └── index.ts          # Y.js 协同服务器
+│   └── web/                    # Nuxt 应用
+│       ├── app/               # 应用核心
+│       │   ├── components/    # Vue 组件
+│       │   │   ├── editor/   # Tiptap 编辑器
+│       │   │   └── ui/       # Shadcn 组件
+│       │   ├── composables/  # 可复用逻辑 (useAuth)
+│       │   ├── layouts/      # 布局组件
+│       │   │   ├── default.vue  # 公共页面布局
+│       │   │   └── app.vue      # 应用内布局 (侧边栏)
+│       │   ├── pages/        # 路由页面
+│       │   │   ├── auth/     # 登录/注册
+│       │   │   └── documents/# 文档管理
+│       │   └── lib/          # 工具函数
+│       └── server/           # API 路由
+│           ├── api/          # HTTP API
+│           │   ├── auth/     # 认证接口
+│           │   └── documents/# 文档 CRUD
+│           └── utils/        # 服务端工具
 └── packages/
     └── shared/               # 共享代码库
-        ├── schema.ts         # 数据库 Schema
+        ├── schema.ts         # 数据库 Schema (Drizzle)
         └── types.ts          # TypeScript 类型定义
 ```
 
@@ -98,8 +106,8 @@ DATABASE_URL="postgresql://user:password@host/dbname"
 # JWT 密钥 (生产环境请使用强密码)
 JWT_SECRET="your-super-secret-key"
 
-# WebSocket 服务地址
-NUXT_PUBLIC_WS_URL="ws://localhost:1234"
+# (可选) 数据库连接池大小，默认 10
+NUXT_DB_MAX_CONNECTIONS=10
 ```
 
 ### 数据库迁移
@@ -117,9 +125,6 @@ pnpm run db:studio
 ```bash
 # 启动 Nuxt 应用 (http://localhost:3000)
 pnpm dev
-
-# 启动协同服务器 (ws://localhost:1234) - Week 3 后可用
-pnpm run dev:collab
 ```
 
 ## 📚 开发指南
@@ -129,7 +134,6 @@ pnpm run dev:collab
 ```bash
 # 开发
 pnpm dev              # 启动 web 应用
-pnpm dev:collab       # 启动协同服务
 
 # 构建
 pnpm build            # 构建所有包
@@ -186,34 +190,37 @@ pnpm dlx shadcn-vue@latest add card
 
 ## 🎯 开发路线图
 
-### Week 1: 全栈基建 ✅ (已完成)
+### Phase 1: 全栈基建 ✅
 
 - [x] Monorepo 结构搭建
 - [x] 数据库连接与 Schema 定义
 - [x] UI 框架集成 (Tailwind + Shadcn)
 - [x] 用户注册/登录 (JWT + Cookie)
 - [x] 文档管理系统 (CRUD + Dashboard)
+- [x] useAuth Composable 认证逻辑复用
 
-### Week 2: 编辑器核心
+### Phase 2: 编辑器核心 ✅
 
-- [ ] Tiptap 富文本编辑器
-- [ ] Slash 命令菜单
-- [ ] Markdown 支持
-- [ ] 自动保存功能
+- [x] Tiptap 富文本编辑器集成
+- [x] App Shell 布局 (Notion/Linear 风格侧边栏)
+- [x] 文档自动保存 (防抖 1s)
+- [x] 非阻塞数据获取 (useLazyFetch)
+- [x] 骨架屏加载优化
+- [x] 异步组件拆分
 
-### Week 3: 实时协同
+### Phase 3: 实时协同 (计划中)
 
 - [ ] WebSocket 服务搭建
-- [ ] Y.js 集成
+- [ ] Y.js CRDT 集成
 - [ ] 多人光标同步
 - [ ] 冲突解决机制
 
-### Week 4: 高级特性
+### Phase 4: 高级特性 (计划中)
 
+- [ ] Slash 命令菜单
 - [ ] AI 辅助写作
 - [ ] 图片上传 (S3/R2)
 - [ ] 混合部署架构
-- [ ] 性能优化
 
 ## 🚢 部署
 
@@ -223,14 +230,6 @@ pnpm dlx shadcn-vue@latest add card
 # Vercel 会自动识别 Nuxt 项目
 # 设置根目录为 apps/web
 # 添加环境变量
-```
-
-### Collaboration Server (Render/Railway)
-
-```bash
-# 设置 Root Directory 为 apps/collaboration
-# 添加 Start Command: node index.js
-# 配置环境变量
 ```
 
 ## 🤝 贡献
@@ -245,8 +244,8 @@ ISC
 
 - [shadcn-vue](https://www.shadcn-vue.com) - 优秀的 Vue 组件库
 - [Tiptap](https://tiptap.dev) - 强大的编辑器框架
-- [Y.js](https://yjs.dev) - CRDT 协同引擎
 - [Neon](https://neon.tech) - Serverless PostgreSQL
+- [Drizzle ORM](https://orm.drizzle.team) - 类型安全的 ORM
 
 ---
 

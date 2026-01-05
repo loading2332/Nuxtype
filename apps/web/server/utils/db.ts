@@ -15,8 +15,10 @@ if (!connectionString) {
 }
 
 // 创建 PostgreSQL 连接
-// max: 1 表示每个服务器实例只使用一个连接（适合 serverless）
-const client = postgres(connectionString, { max: 1 })
+// 默认使用 10 个连接，适合 VPS/容器部署
+// 如果部署到 Serverless (如 Vercel)，请在环境变量中设置 NUXT_DB_MAX_CONNECTIONS=1
+const maxConnections = Number(process.env.NUXT_DB_MAX_CONNECTIONS) || 10
+const client = postgres(connectionString, { max: maxConnections })
 
 // 创建 Drizzle 实例，传入 schema 以获得类型支持
 export const db = drizzle(client, { schema })

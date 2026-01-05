@@ -6,6 +6,9 @@ import { useToast } from "@/components/ui/toast/use-toast"
 useHead({
   title: "Documents - Nuxtype",
 })
+definePageMeta({
+  layout: "app",
+})
 
 // 状态管理
 const isLoading = ref(false)
@@ -45,9 +48,10 @@ async function handleCreate() {
       await navigateTo(`/documents/${newDoc.id}`)
     }
   }
-  catch (err: any) {
+  catch (err: unknown) {
     // 尝试提取详细错误信息
-    const message = err.data?.message || err.message || "Failed to create document"
+    const error = err as { data?: { message?: string }, message?: string }
+    const message = error.data?.message || error.message || "Failed to create document"
     toast({
       title: "Error",
       description: message,
@@ -92,8 +96,9 @@ async function confirmDelete() {
 
     await refresh()
   }
-  catch (err: any) {
-    const message = err.data?.message || err.message || "Failed to delete document"
+  catch (err: unknown) {
+    const error = err as { data?: { message?: string }, message?: string }
+    const message = error.data?.message || error.message || "Failed to delete document"
     toast({
       title: "Error",
       description: message,
