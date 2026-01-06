@@ -3,10 +3,12 @@ import Placeholder from "@tiptap/extension-placeholder"
 import StarterKit from "@tiptap/starter-kit"
 import { EditorContent, useEditor } from "@tiptap/vue-3"
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue?: Record<string, unknown>
   editable?: boolean
-}>()
+}>(), {
+  editable: true, // 默认值
+})
 
 const emit = defineEmits(["update:modelValue"])
 
@@ -14,41 +16,44 @@ const isUpdating = ref(false)
 
 const editor = useEditor({
   content: props.modelValue,
-  editable: props.editable ?? true,
+  editable: props.editable,
   extensions: [
     StarterKit,
     Placeholder.configure({
-      placeholder: "Untitled... write something amazing!",
+      placeholder: "Write something amazing...",
     }),
   ],
   editorProps: {
     attributes: {
-      class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl m-5 focus:outline-none max-w-none",
+      class: "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl m-5 focus:outline-none max-w-none min-h-[200px]",
     },
   },
   onUpdate: ({ editor }) => {
     isUpdating.value = true
     emit("update:modelValue", editor.getJSON())
-    // Reset flag immediately after current tick
     nextTick(() => {
       isUpdating.value = false
     })
   },
 })
 
-// Watch for external content changes (e.g. loaded from API)
+// 响应式同步 editable 状态
+watch(() => props.editable, (newEditable) => {
+  editor.value?.setEditable(newEditable)
+})
+
+// 外部内容变化时同步到编辑器
 watch(() => props.modelValue, (newValue) => {
-  // 1. If we are currently typing (source is editor), SKIP everything.
   if (isUpdating.value)
     return
-
-  // 2. If editor is focused, we also likely don't want to overwrite
-  // (unless it's a critical remote change, but for now safe to skip to avoid conflicts)
   if (editor.value && newValue && !editor.value.isFocused) {
-    const isSame = JSON.stringify(editor.value.getJSON()) === JSON.stringify(newValue)
-    if (!isSame) {
-      editor.value.commands.setContent(newValue as Record<string, unknown>, { emitUpdate: false })
-    }
+    editor.value.commands.setContent(newValue, { emitUpdate: false })
+  }
+})
+
+onMounted(() => {
+  if (editor.value) {
+    editor.value.setEditable(props.editable)
   }
 })
 
@@ -64,7 +69,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-/* Tiptap specific styles if needed */
 .ProseMirror p.is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);

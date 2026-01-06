@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { ApiResponse, Document } from "@nuxtype/shared"
 import { useDebounceFn } from "@vueuse/core"
+import TiptapEditor from "@/components/editor/TiptapEditor.vue"
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue"
 import { useToast } from "@/components/ui/toast/use-toast"
-
-const TiptapEditor = defineAsyncComponent(() => import("@/components/editor/TiptapEditor.vue"))
 
 definePageMeta({
   layout: "app",
@@ -19,18 +18,22 @@ const { data: response, error, status } = useLazyFetch<ApiResponse<Document>>(`/
 
 // 响应式文档内容
 const document = computed(() => response.value?.data)
+const title = ref("")
 const content = ref<Record<string, unknown>>({})
 const isSaving = ref(false)
 
-// 当数据加载完成后，初始化 content
+// 当数据加载完成后，初始化 title 和 content
 watch(document, (doc) => {
-  if (doc?.content) {
-    content.value = doc.content as unknown as Record<string, unknown>
+  if (doc) {
+    title.value = doc.title
+    if (doc.content) {
+      content.value = doc.content as unknown as Record<string, unknown>
+    }
   }
 }, { immediate: true })
 
 // 2. Auto-Save Logic
-const saveDocument = useDebounceFn(async (newContent: Record<string, unknown>) => {
+const saveDocument = useDebounceFn(async () => {
   if (!document.value)
     return // 文档未加载完成时不保存
 
@@ -39,8 +42,8 @@ const saveDocument = useDebounceFn(async (newContent: Record<string, unknown>) =
     await $fetch(`/api/documents/${docId}`, {
       method: "PUT",
       body: {
-        title: document.value.title,
-        content: newContent,
+        title: title.value,
+        content: content.value,
       },
     })
   }
@@ -58,10 +61,10 @@ const saveDocument = useDebounceFn(async (newContent: Record<string, unknown>) =
   }
 }, 1000)
 
-// Watch for changes from Editor
-watch(content, (newVal) => {
+// Watch for changes from Editor and Title
+watch([title, content], () => {
   if (document.value) {
-    saveDocument(newVal)
+    saveDocument()
   }
 })
 
@@ -113,6 +116,12 @@ useHead({
 
       <!-- Editor -->
       <div class="flex-1 min-h-0 bg-card rounded-lg border shadow-sm p-2 overflow-y-auto">
+        <!-- Editable Title -->
+        <input
+          v-model="title"
+          class="w-full text-3xl font-bold bg-transparent border-none focus:outline-none px-5 pt-4 pb-2 placeholder:text-muted-foreground/50"
+          placeholder="Untitled"
+        >
         <ClientOnly>
           <TiptapEditor v-model="content" />
           <template #fallback>
