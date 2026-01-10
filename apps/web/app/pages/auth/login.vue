@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ApiResponse, User } from "@nuxtype/shared"
 import { ref } from "vue"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/toast/use-toast"
 
+const { login } = useAuth()
 const { toast } = useToast()
 const email = ref("")
 const password = ref("")
@@ -15,25 +15,7 @@ const loading = ref(false)
 async function handleLogin() {
   loading.value = true
   try {
-    const response = await $fetch<ApiResponse<{ token: string, user: User }>>("/api/login", {
-      method: "POST",
-      body: {
-        email: email.value,
-        password: password.value,
-      },
-    })
-
-    if (response.success && response.data) {
-      // 存储 Token 到 Cookie，这样后续请求会自动带上
-      const tokenCookie = useCookie("token")
-      tokenCookie.value = response.data.token
-
-      toast({
-        title: "登录成功",
-        description: "跳转至主页面",
-      })
-      await navigateTo("/documents")
-    }
+    await login(email.value, password.value)
   }
   catch (e: unknown) {
     const message = e instanceof Error ? e.message : "未知错误"

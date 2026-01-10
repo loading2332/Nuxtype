@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ApiResponse, CreateDocumentRequest, Document } from "@nuxtype/shared"
 import { Loader2, Plus, Trash } from "lucide-vue-next"
-import { useToast } from "@/components/ui/toast/use-toast"
+import { useDocuments } from "@/composables/useDocuments"
+
 // 页面元数据
 useHead({
   title: "Documents - Nuxtype",
@@ -11,56 +11,19 @@ definePageMeta({
 })
 
 // 状态管理
-const isLoading = ref(false)
-const { toast } = useToast()
-const { data: response, refresh } = await useFetch<ApiResponse<Document[]>>("/api/documents")
-const documents = computed(() => response.value?.data || [])
+const { documents, createDocument, deleteDocument } = useDocuments()
+const isLoading = ref(false) // 用于按钮 Loading 状态
 
 /**
  * 创建新文档
- * 1. 调用 POST /api/documents
- * 2. 成功后跳转到编辑器页面
  */
 async function handleCreate() {
-  try {
-    isLoading.value = true
-
-    // 构造请求数据 (符合我们的类型定义)
-    const payload: CreateDocumentRequest = {
-      title: "Untitled Document",
-    }
-
-    const data = await $fetch("/api/documents", {
-      method: "POST",
-      body: payload,
-    })
-
-    // $fetch 直接返回解析后的数据 (data)，不需要 .value，也不包含 error 对象 (会直接 throw)
-    // 根据后端返回 { success: true, data: ... }
-    const newDoc = (data as ApiResponse<Document>).data
-
-    if (newDoc?.id) {
-      toast({
-        title: "Success",
-        description: "Document created successfully",
-      })
-      // 跳转到文档详情页 (Week 2 会实现这个页面)
-      await navigateTo(`/documents/${newDoc.id}`)
-    }
+  isLoading.value = true
+  const newDoc = await createDocument()
+  if (newDoc) {
+    await navigateTo(`/documents/${newDoc.id}`)
   }
-  catch (err: unknown) {
-    // 尝试提取详细错误信息
-    const error = err as { data?: { message?: string }, message?: string }
-    const message = error.data?.message || error.message || "Failed to create document"
-    toast({
-      title: "Error",
-      description: message,
-      variant: "destructive",
-    })
-  }
-  finally {
-    isLoading.value = false
-  }
+  isLoading.value = false
 }
 
 /**
@@ -78,37 +41,11 @@ async function confirmDelete() {
   if (!deleteId.value)
     return
 
-  try {
-    isLoading.value = true
-
-    await $fetch(`/api/documents/${deleteId.value}`, {
-      method: "DELETE",
-    })
-
-    toast({
-      title: "Success",
-      description: "Document deleted successfully",
-    })
-
-    // 关闭弹窗并重置 ID
-    isDeleteDialogOpen.value = false
-    deleteId.value = null
-
-    await refresh()
-  }
-  catch (err: unknown) {
-    const error = err as { data?: { message?: string }, message?: string }
-    const message = error.data?.message || error.message || "Failed to delete document"
-    toast({
-      title: "Error",
-      description: message,
-      variant: "destructive",
-    })
-  }
-
-  finally {
-    isLoading.value = false
-  }
+  isLoading.value = true
+  await deleteDocument(deleteId.value)
+  isDeleteDialogOpen.value = false
+  deleteId.value = null
+  isLoading.value = false
 }
 </script>
 

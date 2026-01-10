@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { ApiResponse, Document } from "@nuxtype/shared"
+import type { ApiResponse, Document, DocumentContent } from "@nuxtype/shared"
 import { useDebounceFn } from "@vueuse/core"
 import TiptapEditor from "@/components/editor/TiptapEditor.vue"
 import Skeleton from "@/components/ui/skeleton/Skeleton.vue"
-import { useToast } from "@/components/ui/toast/use-toast"
+import { useDocuments } from "@/composables/useDocuments"
 
 definePageMeta({
   layout: "app",
@@ -11,7 +11,7 @@ definePageMeta({
 
 const route = useRoute()
 const docId = route.params.id as string
-const { toast } = useToast()
+const { updateDocument } = useDocuments()
 
 // 1. Fetch Document (NON-BLOCKING - 页面立即渲染)
 const { data: response, error, status } = useLazyFetch<ApiResponse<Document>>(`/api/documents/${docId}`)
@@ -24,7 +24,8 @@ const isSaving = ref(false)
 
 // 当数据加载完成后，初始化 title 和 content
 watch(document, (doc) => {
-  if (doc) {
+  // 如果正在保存，说明当前本地状态是最新的，无需从 cache 同步，防止死循环或光标重置
+  if (doc && !isSaving.value) {
     title.value = doc.title
     if (doc.content) {
       content.value = doc.content as unknown as Record<string, unknown>
@@ -39,20 +40,13 @@ const saveDocument = useDebounceFn(async () => {
 
   isSaving.value = true
   try {
-    await $fetch(`/api/documents/${docId}`, {
-      method: "PUT",
-      body: {
-        title: title.value,
-        content: content.value,
-      },
+    await updateDocument(docId, {
+      title: title.value,
+      content: content.value as unknown as DocumentContent,
     })
   }
   catch {
-    toast({
-      title: "Error",
-      description: "Failed to save document",
-      variant: "destructive",
-    })
+    // 错误处理已在 updateDocument 中包含 toast
   }
   finally {
     setTimeout(() => {

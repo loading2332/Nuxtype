@@ -1,26 +1,19 @@
 import { documents } from "@nuxtype/shared"
 import { and, eq } from "drizzle-orm"
+import { requireAuth } from "../../utils/auth"
 import { db } from "../../utils/db"
-import { extractToken, verifyToken } from "../../utils/jwt"
 
 export default defineEventHandler(async (event) => {
-  // 1. Auth Check
-  const token = extractToken(event)
-  if (!token) {
-    throw createError({ statusCode: 401, message: "Unauthorized" })
-  }
-  const user = verifyToken(token)
-  if (!user) {
-    throw createError({ statusCode: 401, message: "Unauthorized" })
-  }
+  // 使用工具函数进行认证
+  const user = requireAuth(event)
 
-  // 2. Parse ID
+  // Parse ID
   const documentId = getRouterParam(event, "id")
   if (!documentId) {
     throw createError({ statusCode: 400, message: "Missing document ID" })
   }
 
-  // 3. Fetch Document
+  // Fetch Document
   const docs = await db
     .select()
     .from(documents)

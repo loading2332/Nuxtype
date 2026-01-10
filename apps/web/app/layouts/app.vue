@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import type { ApiResponse, Document } from "@nuxtype/shared"
 import { FileText, LogOut, Menu, Plus } from "lucide-vue-next"
 import { Toaster } from "@/components/ui/toast"
 
 const { logout } = useAuth()
-const { data: response } = await useFetch<ApiResponse<Document[]>>("/api/documents")
-const documents = computed(() => response.value?.data || [])
+const { documents, createDocument } = useDocuments()
 
 const isMobileMenuOpen = ref(false)
 
 async function handleCreate() {
-  // TODO: Refactor create logic to composable or emit event
-  await navigateTo("/documents")
+  const newDoc = await createDocument()
+  if (newDoc) {
+    await navigateTo(`/documents/${newDoc.id}`)
+    // 关闭移动端菜单（如果打开）
+    isMobileMenuOpen.value = false
+  }
 }
 </script>
 

@@ -14,10 +14,19 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    jwtSecret: process.env.JWT_SECRET,
+    jwtSecret: process.env.NUXT_JWT_SECRET || process.env.JWT_SECRET,
     databaseUrl: process.env.DATABASE_URL,
+    // R2 Configuration (Private)
+    r2: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      bucketName: process.env.R2_BUCKET_NAME,
+      endpoint: process.env.R2_ENDPOINT,
+      publicDomain: process.env.R2_PUBLIC_DOMAIN,
+    },
     public: {
       wsUrl: process.env.NUXT_PUBLIC_WS_URL || "ws://localhost:1234",
+      r2PublicDomain: process.env.R2_PUBLIC_DOMAIN,
     },
   },
 

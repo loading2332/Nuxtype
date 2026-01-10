@@ -1,29 +1,23 @@
-import type { DocumentContent, UpdateDocumentRequest } from "@nuxtype/shared"
-import { documents } from "@nuxtype/shared"
+import type { DocumentContent } from "@nuxtype/shared"
+import { documents, UpdateDocumentSchema } from "@nuxtype/shared"
 import { and, eq } from "drizzle-orm"
+import { requireAuth } from "../../utils/auth"
 import { db } from "../../utils/db"
-import { extractToken, verifyToken } from "../../utils/jwt"
 
 export default defineEventHandler(async (event) => {
-  // 1. Auth Check
-  const token = extractToken(event)
-  if (!token) {
-    throw createError({ statusCode: 401, message: "Unauthorized" })
-  }
-  const user = verifyToken(token)
-  if (!user) {
-    throw createError({ statusCode: 401, message: "Unauthorized" })
-  }
+  // 1. 认证用户
+  const user = requireAuth(event)
 
-  // 2. Parse ID and Body
+  // 2. 获取文档 ID
   const documentId = getRouterParam(event, "id")
   if (!documentId) {
     throw createError({ statusCode: 400, message: "Missing document ID" })
   }
 
-  const body = await readBody<UpdateDocumentRequest>(event)
+  // 3. 验证请求体
+  const body = await readValidatedBody(event, UpdateDocumentSchema.parse)
 
-  // 3. Prepare Update Data
+  // 4. 准备更新数据
   const updateData: Partial<typeof documents.$inferInsert> = {
     updatedAt: new Date(),
   }
@@ -31,11 +25,9 @@ export default defineEventHandler(async (event) => {
   if (body.title !== undefined)
     updateData.title = body.title
   if (body.content !== undefined)
-    updateData.content = body.content as unknown as DocumentContent // Cast for Drizzle
-  if (body.isPublic !== undefined)
-    updateData.isPublic = body.isPublic
+    updateData.content = body.content as unknown as DocumentContent
 
-  // 4. Execute Update (with Ownership Check)
+  // 5. 执行更新 (确保所有权)
   const result = await db
     .update(documents)
     .set(updateData)

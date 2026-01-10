@@ -1,16 +1,11 @@
 import { documents } from "@nuxtype/shared"
 import { desc, eq } from "drizzle-orm"
+import { requireAuth } from "../../utils/auth"
 import { db } from "../../utils/db"
-import { extractToken, verifyToken } from "../../utils/jwt"
 
 export default defineEventHandler(async (event) => {
-  const token = extractToken(event)
-  if (!token)
-    throw createError({ statusCode: 401 })
-
-  const user = verifyToken(token)
-  if (!user)
-    throw createError({ statusCode: 401 })
+  // 使用工具函数进行认证
+  const user = requireAuth(event)
 
   const docs = await db
     .select()

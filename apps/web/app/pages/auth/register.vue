@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/toast/use-toast"
 
+const { register } = useAuth()
 const { toast } = useToast()
 const email = ref("")
 const password = ref("")
@@ -24,28 +25,7 @@ async function handleRegister() {
 
   loading.value = true
   try {
-    const { error } = await useFetch("/api/register", {
-      method: "POST",
-      body: {
-        email: email.value,
-        password: password.value,
-      },
-    })
-
-    if (error.value) {
-      toast({
-        title: "注册失败",
-        description: error.value.message,
-        variant: "destructive",
-      })
-      return
-    }
-
-    toast({
-      title: "注册成功",
-      description: "请登录您的账户",
-    })
-    navigateTo("/auth/login")
+    await register(email.value, password.value)
   }
   catch (e: unknown) {
     const message = e instanceof Error ? e.message : "未知错误"
