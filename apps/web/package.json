@@ -11,7 +11,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.966.0",
+    "@hocuspocus/provider": "^3.4.3",
     "@nuxtype/shared": "workspace:*",
+    "@tiptap/extension-collaboration": "^3.15.3",
+    "@tiptap/extension-collaboration-cursor": "^2.26.2",
     "@tiptap/extension-image": "^3.15.1",
     "@tiptap/extension-link": "^3.15.1",
     "@tiptap/extension-placeholder": "^3.15.1",
@@ -36,6 +39,7 @@
     "tiptap-markdown": "^0.9.0",
     "vue": "^3.5.25",
     "vue-router": "^4.6.4",
+    "yjs": "^13.6.29",
     "zod": "^4.2.1"
   },
   "devDependencies": {

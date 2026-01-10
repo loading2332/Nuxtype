@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { JSONContent } from "@tiptap/vue-3"
+import Collaboration from "@tiptap/extension-collaboration"
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor"
 import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
@@ -8,29 +10,45 @@ import TaskList from "@tiptap/extension-task-list"
 import Typography from "@tiptap/extension-typography"
 import StarterKit from "@tiptap/starter-kit"
 import { EditorContent, useEditor } from "@tiptap/vue-3"
-import { Bold, Image as ImageIcon, Italic, List, ListOrdered, Loader2 } from "lucide-vue-next"
+import { HocuspocusProvider } from "@hocuspocus/provider"
+import { Bold, Image as ImageIcon, Italic, List, ListOrdered, Loader2, Users, Wifi, WifiOff } from "lucide-vue-next"
 import { Markdown } from "tiptap-markdown"
-import { nextTick, onBeforeUnmount, ref, watch } from "vue"
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import * as Y from "yjs"
 import { useToast } from "@/components/ui/toast/use-toast"
 
 const props = withDefaults(defineProps<{
   modelValue?: JSONContent
   editable?: boolean
+  docId?: string // 文档 ID (用于协同)
+  token?: string // JWT Token (用于协同认证)
+  userName?: string // 用户名 (显示在光标上)
+  userColor?: string // 用户颜色
 }>(), {
   editable: true,
+  userName: "Anonymous",
+  userColor: "#6366f1",
 })
 
 const emit = defineEmits(["update:modelValue"])
 
 const { toast } = useToast()
+const config = useRuntimeConfig()
 
 const isUpdating = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const isUploading = ref(false)
 
+// 协同状态
+const connectionStatus = ref<"connecting" | "connected" | "disconnected">("disconnected")
+const onlineUsers = ref<Array<{ name: string, color: string }>>([])
+
 // R2 public domain for image detection
-const config = useRuntimeConfig()
 const R2_PUBLIC_DOMAIN = config.public.r2PublicDomain
+
+// Y.js 和 Hocuspocus Provider (仅协同模式)
+const ydoc = props.docId ? new Y.Doc() : null
+const provider = ref<HocuspocusProvider | null>(null)
 
 // Helper: Delete image from R2 (fire and forget)
 function deleteR2Image(url: string) {
@@ -45,11 +63,19 @@ function deleteR2Image(url: string) {
   })
 }
 
-const editor = useEditor({
-  content: props.modelValue,
-  editable: props.editable,
-  extensions: [
-    StarterKit,
+// 生成随机颜色
+function getRandomColor() {
+  const colors = ["#f43f5e", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899"]
+  return colors[Math.floor(Math.random() * colors.length)]
+}
+
+// 构建扩展列表
+function buildExtensions() {
+  const baseExtensions = [
+    StarterKit.configure({
+      // 协同模式下禁用内置 history，使用 Y.js 的 undo 管理
+      history: props.docId ? false : undefined,
+    }),
     Placeholder.configure({
       placeholder: "Write something amazing...",
     }),
@@ -69,18 +95,46 @@ const editor = useEditor({
       transformPastedText: true,
       transformCopiedText: true,
     }),
-  ],
+  ]
+
+  // 协同模式扩展
+  if (props.docId && ydoc && provider.value) {
+    baseExtensions.push(
+      Collaboration.configure({
+        document: ydoc,
+      }),
+      CollaborationCursor.configure({
+        provider: provider.value,
+        user: {
+          name: props.userName,
+          color: props.userColor || getRandomColor(),
+        },
+      }),
+    )
+  }
+
+  return baseExtensions
+}
+
+// 创建编辑器
+const editor = useEditor({
+  content: props.docId ? undefined : props.modelValue, // 协同模式由 Y.js 管理内容
+  editable: props.editable,
+  extensions: buildExtensions(),
   editorProps: {
     attributes: {
       class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl m-5 focus:outline-none max-w-none min-h-[200px]",
     },
   },
   onUpdate: ({ editor }) => {
-    isUpdating.value = true
-    emit("update:modelValue", editor.getJSON())
-    nextTick(() => {
-      isUpdating.value = false
-    })
+    // 非协同模式：通过 v-model 同步
+    if (!props.docId) {
+      isUpdating.value = true
+      emit("update:modelValue", editor.getJSON())
+      nextTick(() => {
+        isUpdating.value = false
+      })
+    }
   },
   onTransaction: ({ editor, transaction }) => {
     // Detect deleted images by comparing before/after content
@@ -115,11 +169,50 @@ const editor = useEditor({
   },
 })
 
+// 初始化协同连接
+onMounted(() => {
+  if (props.docId && props.token && ydoc) {
+    const wsUrl = config.public.wsUrl || "ws://localhost:1234"
+
+    provider.value = new HocuspocusProvider({
+      url: wsUrl,
+      name: props.docId,
+      document: ydoc,
+      token: props.token,
+      onConnect: () => {
+        connectionStatus.value = "connected"
+      },
+      onDisconnect: () => {
+        connectionStatus.value = "disconnected"
+      },
+      onAwarenessUpdate: ({ states }) => {
+        // 更新在线用户列表
+        onlineUsers.value = Array.from(states.values())
+          .filter((state: any) => state.user)
+          .map((state: any) => ({
+            name: state.user.name,
+            color: state.user.color,
+          }))
+      },
+    })
+
+    connectionStatus.value = "connecting"
+
+    // 重新配置编辑器以包含协同扩展
+    if (editor.value) {
+      editor.value.destroy()
+    }
+  }
+})
+
 watch(() => props.editable, (newEditable) => {
   editor.value?.setEditable(newEditable)
 })
 
 watch(() => props.modelValue, (newValue) => {
+  // 协同模式下不通过 v-model 同步
+  if (props.docId)
+    return
   if (isUpdating.value)
     return
   if (editor.value && newValue && !editor.value.isFocused) {
@@ -128,6 +221,7 @@ watch(() => props.modelValue, (newValue) => {
 })
 
 onBeforeUnmount(() => {
+  provider.value?.destroy()
   editor.value?.destroy()
 })
 
@@ -251,6 +345,24 @@ async function handleFileUpload(event: Event) {
         accept="image/png, image/jpeg, image/webp, image/gif"
         @change="handleFileUpload"
       >
+
+      <!-- 协同模式状态指示器 -->
+      <template v-if="docId">
+        <div class="flex-1" />
+
+        <!-- 连接状态 -->
+        <div class="flex items-center gap-2 text-sm">
+          <Wifi v-if="connectionStatus === 'connected'" class="w-4 h-4 text-green-500" />
+          <WifiOff v-else-if="connectionStatus === 'disconnected'" class="w-4 h-4 text-red-500" />
+          <Loader2 v-else class="w-4 h-4 animate-spin text-blue-500" />
+
+          <!-- 在线用户 -->
+          <div v-if="onlineUsers.length > 0" class="flex items-center gap-1">
+            <Users class="w-4 h-4 text-gray-500" />
+            <span class="text-gray-500">{{ onlineUsers.length }}</span>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Editor -->
@@ -304,5 +416,30 @@ async function handleFileUpload(event: Event) {
   margin-top: 1rem;
   margin-bottom: 1rem;
   border: 1px solid #e5e7eb;
+}
+
+/* Collaboration Cursor Styles */
+:deep(.collaboration-cursor__caret) {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  word-break: normal;
+  pointer-events: none;
+}
+
+:deep(.collaboration-cursor__label) {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: normal;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px 3px 3px 0;
+  white-space: nowrap;
+  color: white;
+  user-select: none;
 }
 </style>

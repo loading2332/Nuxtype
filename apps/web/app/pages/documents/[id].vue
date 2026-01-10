@@ -13,6 +13,20 @@ definePageMeta({
 const route = useRoute()
 const docId = route.params.id as string
 const { updateDocument } = useDocuments()
+const { token } = useAuth()
+
+// 从 token 解析用户邮箱 (简单实现，实际可从后端获取)
+const userEmail = computed(() => {
+  if (!token.value)
+    return "Anonymous"
+  try {
+    const payload = JSON.parse(atob(token.value.split(".")[1]))
+    return payload.email || "Anonymous"
+  }
+  catch {
+    return "Anonymous"
+  }
+})
 
 // 1. Fetch Document (NON-BLOCKING - 页面立即渲染)
 const { data: response, error, status } = useLazyFetch<ApiResponse<Document>>(`/api/documents/${docId}`)
@@ -118,7 +132,12 @@ useHead({
           placeholder="Untitled"
         >
         <ClientOnly>
-          <TiptapEditor v-model="content" />
+          <TiptapEditor
+            v-model="content"
+            :doc-id="docId"
+            :token="token"
+            :user-name="userEmail"
+          />
           <template #fallback>
             <div class="p-4 space-y-4">
               <Skeleton class="h-8 w-3/4" />
