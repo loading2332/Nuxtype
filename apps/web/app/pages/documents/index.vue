@@ -8,6 +8,7 @@ useHead({
 })
 definePageMeta({
   layout: "app",
+  middleware: "auth",
 })
 
 // 状态管理

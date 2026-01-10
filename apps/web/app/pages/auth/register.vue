@@ -8,6 +8,11 @@ import { useToast } from "@/components/ui/toast/use-toast"
 
 const { register } = useAuth()
 const { toast } = useToast()
+
+definePageMeta({
+  middleware: "guest",
+})
+
 const email = ref("")
 const password = ref("")
 const confirmPassword = ref("")

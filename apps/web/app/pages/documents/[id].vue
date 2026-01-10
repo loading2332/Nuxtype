@@ -7,6 +7,7 @@ import { useDocuments } from "@/composables/useDocuments"
 
 definePageMeta({
   layout: "app",
+  middleware: "auth",
 })
 
 const route = useRoute()
