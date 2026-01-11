@@ -60,7 +60,8 @@ const server = Server.configure({
           email: payload.email,
         },
       }
-    } catch (error) {
+    }
+    catch (error) {
       console.error("[Auth] Failed:", error)
       throw new Error("Invalid token")
     }
