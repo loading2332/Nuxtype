@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "dev": "pnpm --filter web dev",
-    "dev:collab": "pnpm --filter collaboration dev",
+    "dev:collab": "pnpm --filter collab dev",
     "build": "pnpm -r build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

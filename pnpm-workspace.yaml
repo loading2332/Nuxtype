@@ -2,7 +2,7 @@ shellEmulator: true
 
 trustDowngrade: true
 
-trustPolicy: no-downgrade
+# trustPolicy: no-downgrade
 packages:
   - apps/*
   - packages/*

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { AnyExtension } from "@tiptap/core"
 import type { JSONContent } from "@tiptap/vue-3"
+import { HocuspocusProvider } from "@hocuspocus/provider"
 import Collaboration from "@tiptap/extension-collaboration"
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor"
+import CollaborationCaret from "@tiptap/extension-collaboration-caret"
 import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
@@ -9,11 +11,10 @@ import TaskItem from "@tiptap/extension-task-item"
 import TaskList from "@tiptap/extension-task-list"
 import Typography from "@tiptap/extension-typography"
 import StarterKit from "@tiptap/starter-kit"
-import { EditorContent, useEditor } from "@tiptap/vue-3"
-import { HocuspocusProvider } from "@hocuspocus/provider"
+import { Editor, EditorContent } from "@tiptap/vue-3"
 import { Bold, Image as ImageIcon, Italic, List, ListOrdered, Loader2, Users, Wifi, WifiOff } from "lucide-vue-next"
 import { Markdown } from "tiptap-markdown"
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue"
 import * as Y from "yjs"
 import { useToast } from "@/components/ui/toast/use-toast"
 
@@ -71,10 +72,10 @@ function getRandomColor() {
 
 // 构建扩展列表
 function buildExtensions() {
-  const baseExtensions = [
+  const baseExtensions: AnyExtension[] = [
     StarterKit.configure({
-      // 协同模式下禁用内置 history，使用 Y.js 的 undo 管理
-      history: props.docId ? false : undefined,
+      // 协同模式下禁用内置 undo/redo，使用 Y.js 的 undo 管理
+      undoRedo: props.docId ? false : undefined,
     }),
     Placeholder.configure({
       placeholder: "Write something amazing...",
@@ -103,7 +104,7 @@ function buildExtensions() {
       Collaboration.configure({
         document: ydoc,
       }),
-      CollaborationCursor.configure({
+      CollaborationCaret.configure({
         provider: provider.value,
         user: {
           name: props.userName,
@@ -117,57 +118,7 @@ function buildExtensions() {
 }
 
 // 创建编辑器
-const editor = useEditor({
-  content: props.docId ? undefined : props.modelValue, // 协同模式由 Y.js 管理内容
-  editable: props.editable,
-  extensions: buildExtensions(),
-  editorProps: {
-    attributes: {
-      class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl m-5 focus:outline-none max-w-none min-h-[200px]",
-    },
-  },
-  onUpdate: ({ editor }) => {
-    // 非协同模式：通过 v-model 同步
-    if (!props.docId) {
-      isUpdating.value = true
-      emit("update:modelValue", editor.getJSON())
-      nextTick(() => {
-        isUpdating.value = false
-      })
-    }
-  },
-  onTransaction: ({ editor, transaction }) => {
-    // Detect deleted images by comparing before/after content
-    if (!transaction.docChanged)
-      return
-
-    const beforeDoc = transaction.before
-    const afterDoc = editor.state.doc
-
-    // Extract image sources from both states
-    const beforeImages = new Set<string>()
-    const afterImages = new Set<string>()
-
-    beforeDoc.descendants((node) => {
-      if (node.type.name === "image" && node.attrs.src) {
-        beforeImages.add(node.attrs.src)
-      }
-    })
-
-    afterDoc.descendants((node) => {
-      if (node.type.name === "image" && node.attrs.src) {
-        afterImages.add(node.attrs.src)
-      }
-    })
-
-    // Delete removed images from R2
-    beforeImages.forEach((src) => {
-      if (!afterImages.has(src)) {
-        deleteR2Image(src)
-      }
-    })
-  },
-})
+const editor = shallowRef<Editor | null>(null)
 
 // 初始化协同连接
 onMounted(() => {
@@ -195,15 +146,62 @@ onMounted(() => {
           }))
       },
     })
-
     connectionStatus.value = "connecting"
-
-    // 重新配置编辑器以包含协同扩展
-    if (editor.value) {
-      editor.value.destroy()
-    }
   }
-})
+
+  editor.value = new Editor({
+    content: props.docId ? undefined : props.modelValue,
+    editable: props.editable,
+    extensions: buildExtensions(),
+    editorProps: {
+      attributes: {
+        class: "prose prose-sm sm:prose lg:prose-lg xl:prose-xl m-5 focus:outline-none max-w-none min-h-[200px]",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      // 非协同模式：通过 v-model 同步
+      if (!props.docId) {
+        isUpdating.value = true
+        emit("update:modelValue", editor.getJSON())
+        nextTick(() => {
+          isUpdating.value = false
+        })
+      }
+    },
+    onTransaction: ({ editor, transaction }) => {
+      // Detect deleted images by comparing before/after content
+      if (!transaction.docChanged)
+        return
+
+      const beforeDoc = transaction.before
+      const afterDoc = editor.state.doc
+
+      // Extract image sources from both states
+      const beforeImages = new Set<string>()
+      const afterImages = new Set<string>()
+
+      beforeDoc.descendants((node) => {
+        if (node.type.name === "image" && node.attrs.src) {
+          beforeImages.add(node.attrs.src)
+        }
+      })
+
+      afterDoc.descendants((node) => {
+        if (node.type.name === "image" && node.attrs.src) {
+          afterImages.add(node.attrs.src)
+        }
+      })
+
+      // Delete removed images from R2
+      beforeImages.forEach((src) => {
+        if (!afterImages.has(src)) {
+          deleteR2Image(src)
+        }
+      })
+    },
+  })
+},
+)
 
 watch(() => props.editable, (newEditable) => {
   editor.value?.setEditable(newEditable)
