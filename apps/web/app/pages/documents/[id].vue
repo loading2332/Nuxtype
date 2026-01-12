@@ -15,13 +15,18 @@ const docId = route.params.id as string
 const { updateDocument } = useDocuments()
 const { token } = useAuth()
 
-// 从 token 解析用户邮箱 (简单实现，实际可从后端获取)
+// 从 token 解析用户名 (从邮箱中提取)
 const userEmail = computed(() => {
   if (!token.value)
     return "Anonymous"
   try {
-    const payload = JSON.parse(atob(token.value.split(".")[1]))
-    return payload.email || "Anonymous"
+    const tokenParts = token.value.split(".")
+    if (tokenParts.length < 2)
+      return "Anonymous"
+    const payload = JSON.parse(atob(tokenParts[1]!))
+    const email = payload.email
+    // 提取邮箱中的用户名部分 (@ 之前)
+    return email ? email.split("@")[0] : "Anonymous"
   }
   catch {
     return "Anonymous"
@@ -135,7 +140,7 @@ useHead({
           <TiptapEditor
             v-model="content"
             :doc-id="docId"
-            :token="token"
+            :token="token || undefined"
             :user-name="userEmail"
           />
           <template #fallback>

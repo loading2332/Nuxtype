@@ -17,6 +17,12 @@ import { Markdown } from "tiptap-markdown"
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue"
 import * as Y from "yjs"
 import { useToast } from "@/components/ui/toast/use-toast"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip"
 
 const props = withDefaults(defineProps<{
   modelValue?: JSONContent
@@ -30,8 +36,23 @@ const props = withDefaults(defineProps<{
   userName: "Anonymous",
   userColor: "#6366f1",
 })
-
 const emit = defineEmits(["update:modelValue"])
+// 常量定义
+const EDITOR_PLACEHOLDER = "Write something amazing..."
+const COLLABORATION_COLORS = ["#f43f5e", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899"] as const
+
+// Awareness 状态类型
+interface UserInfo {
+  name: string
+  color: string
+}
+
+interface AwarenessState {
+  [key: string]: unknown
+  [key: number]: unknown
+  clientId: number
+  user?: UserInfo
+}
 
 const { toast } = useToast()
 const config = useRuntimeConfig()
@@ -66,8 +87,7 @@ function deleteR2Image(url: string) {
 
 // 生成随机颜色
 function getRandomColor() {
-  const colors = ["#f43f5e", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ec4899"]
-  return colors[Math.floor(Math.random() * colors.length)]
+  return COLLABORATION_COLORS[Math.floor(Math.random() * COLLABORATION_COLORS.length)]
 }
 
 // 构建扩展列表
@@ -78,7 +98,7 @@ function buildExtensions() {
       undoRedo: props.docId ? false : undefined,
     }),
     Placeholder.configure({
-      placeholder: "Write something amazing...",
+      placeholder: EDITOR_PLACEHOLDER,
     }),
     Link.configure({
       openOnClick: false,
@@ -139,14 +159,17 @@ onMounted(() => {
       onAwarenessUpdate: ({ states }) => {
         // 更新在线用户列表
         onlineUsers.value = Array.from(states.values())
-          .filter((state: any) => state.user)
-          .map((state: any) => ({
+          .filter((state): state is AwarenessState & { user: UserInfo } => {
+            return !!(state as AwarenessState).user
+          })
+          .map(state => ({
             name: state.user.name,
             color: state.user.color,
           }))
       },
     })
-    connectionStatus.value = "connecting"
+
+    connectionStatus.value = "connecting" // Provider 创建后设置状态
   }
 
   editor.value = new Editor({
@@ -272,7 +295,8 @@ async function handleFileUpload(event: Event) {
   }
   catch (error: unknown) {
     console.error("Upload failed", error)
-    const message = (error as any).data?.message || "Failed to upload image. Please check your R2 configuration."
+    const errorData = error as { data?: { message?: string } }
+    const message = errorData.data?.message || "Failed to upload image. Please check your R2 configuration."
     toast({
       title: "Upload Failed",
       description: message,
@@ -355,9 +379,32 @@ async function handleFileUpload(event: Event) {
           <Loader2 v-else class="w-4 h-4 animate-spin text-blue-500" />
 
           <!-- 在线用户 -->
-          <div v-if="onlineUsers.length > 0" class="flex items-center gap-1">
+          <div v-if="onlineUsers.length > 0" class="flex items-center gap-2">
             <Users class="w-4 h-4 text-gray-500" />
             <span class="text-gray-500">{{ onlineUsers.length }}</span>
+
+            <!-- 用户彩色圆点（重叠显示） -->
+            <TooltipProvider>
+              <div class="flex items-center">
+                <Tooltip v-for="(user, index) in onlineUsers" :key="user.name">
+                  <TooltipTrigger as-child>
+                    <div
+                      :style="{
+                        backgroundColor: user.color,
+                        marginLeft: index === 0 ? '0' : '-6px',
+                        zIndex: onlineUsers.length - index,
+                      }"
+                      class="w-3 h-3 rounded-full border-2 border-white shadow-sm cursor-pointer hover:scale-125 hover:z-50 transition-all duration-200"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p class="text-xs">
+                      {{ user.name }}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           </div>
         </div>
       </template>
@@ -417,27 +464,38 @@ async function handleFileUpload(event: Event) {
 }
 
 /* Collaboration Cursor Styles */
-:deep(.collaboration-cursor__caret) {
+/* 协作光标样式 */
+:deep(.collaboration-carets__caret) {
   position: relative;
   margin-left: -1px;
   margin-right: -1px;
-  border-left: 1px solid currentColor;
-  border-right: 1px solid currentColor;
+  border-left: 1px solid;
+  border-right: 1px solid;
   word-break: normal;
   pointer-events: none;
 }
 
-:deep(.collaboration-cursor__label) {
-  position: absolute;
+/* 协作选择区域样式 */
+:deep(.collaboration-carets__selection) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* 用户名标签样式 */
+:deep(.collaboration-carets__label) {
+  position: absolute !important;
   top: -1.4em;
   left: -1px;
   font-size: 12px;
+  font-style: normal;
   font-weight: 600;
   line-height: normal;
-  padding: 0.1rem 0.3rem;
+  user-select: none;
+  color: #fff;
+  padding: 2px 6px;
   border-radius: 3px 3px 3px 0;
   white-space: nowrap;
-  color: white;
-  user-select: none;
+  display: inline-block !important;
+  width: auto !important;
 }
 </style>
